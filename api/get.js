@@ -15,12 +15,12 @@ module.exports = async (req, res) => {
     global.tokenDatabase[token] = { userId, expiresAt, used: false };
     global.statsData.totalCreated += 1;
 
-    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024";
+    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024"; // Token của bạn trên Layma
     const domainVercel = `https://${req.headers.host}`;
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
     const linkDuPhong = "https://layma.net/backup";
 
-    // Encode đúng chuẩn để Layma không bao giờ trả về lỗi HTML
+    // Đúng chuẩn API Quicklink theo tài liệu chính chủ của Layma
     const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
 
     try {
@@ -31,21 +31,22 @@ module.exports = async (req, res) => {
         try {
             data = JSON.parse(textResponse);
         } catch (e) {
-            return res.status(500).json({ 
-                success: false, 
-                message: "Layma đang bận hoặc quá tải, vui lòng thử lại sau ít giây." 
-            });
+            return res.status(500).json({ success: false, message: "Layma trả về HTML lỗi: " + textResponse.substring(0, 50) });
         }
 
+        // Theo tài liệu Layma: trả về cấu trúc { success: true, html: "https://layma.net/xxxxx" }
         if (data.success && data.html) {
             let shortLink = data.html;
+            
+            // Phòng hờ nếu Layma trả về dưới dạng thẻ html chứa href
             const hrefMatch = shortLink.match(/href="([^"]+)"/);
             if (hrefMatch) {
                 shortLink = hrefMatch[1];
             }
+
             return res.json({ success: true, short_url: shortLink });
         } else {
-            return res.json({ success: false, message: data.message || "Không thể tạo link rút gọn." });
+            return res.json({ success: false, message: data.message || "Layma từ chối tạo link." });
         }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
