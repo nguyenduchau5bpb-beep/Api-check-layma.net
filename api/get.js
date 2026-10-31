@@ -13,23 +13,24 @@ module.exports = async (req, res) => {
     const expiresAt = Date.now() + 10 * 60 * 1000;
 
     global.tokenDatabase[token] = { userId, expiresAt, used: false };
-    
-    // Tăng biến đếm tổng số link đã tạo
     global.statsData.totalCreated += 1;
 
-    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024";
+    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024"; // Token của bạn từ ảnh
     const domainVercel = `https://${req.headers.host}`;
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
-    
-    const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=https://layma.net/backup`;
+    const linkDuPhong = "https://layma.net/backup";
+
+    // Chuẩn hóa URL theo đúng tài liệu API layma.net
+    const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
 
     try {
         const response = await fetch(laymaUrl);
         const data = await response.json();
+
         if (data.success) {
             return res.json({ success: true, short_url: data.html });
         } else {
-            return res.json({ success: false, message: "Không thể tạo link từ layma.net" });
+            return res.json({ success: false, message: "Layma từ chối tạo link, kiểm tra lại token hoặc URL." });
         }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
