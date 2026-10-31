@@ -15,38 +15,24 @@ module.exports = async (req, res) => {
     global.tokenDatabase[token] = { userId, expiresAt, used: false };
     global.statsData.totalCreated += 1;
 
-    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024"; // Token của bạn trên Layma
+    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024";
     const domainVercel = `https://${req.headers.host}`;
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
     const linkDuPhong = "https://layma.net/backup";
 
-    // Đúng chuẩn API Quicklink theo tài liệu chính chủ của Layma
-    const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
+    // Chuyển format=json thành format=text đúng như tài liệu hướng dẫn của Layma
+    const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=text&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
 
     try {
         const response = await fetch(laymaUrl);
-        const textResponse = await response.text();
-        
-        let data;
-        try {
-            data = JSON.parse(textResponse);
-        } catch (e) {
-            return res.status(500).json({ success: false, message: "Layma trả về HTML lỗi: " + textResponse.substring(0, 50) });
-        }
+        let shortLink = await response.text();
+        shortLink = shortLink.trim();
 
-        // Theo tài liệu Layma: trả về cấu trúc { success: true, html: "https://layma.net/xxxxx" }
-        if (data.success && data.html) {
-            let shortLink = data.html;
-            
-            // Phòng hờ nếu Layma trả về dưới dạng thẻ html chứa href
-            const hrefMatch = shortLink.match(/href="([^"]+)"/);
-            if (hrefMatch) {
-                shortLink = hrefMatch[1];
-            }
-
+        // Kiểm tra xem kết quả trả về có phải là một đường dẫn hợp lệ hay không
+        if (shortLink.startsWith("http")) {
             return res.json({ success: true, short_url: shortLink });
         } else {
-            return res.json({ success: false, message: data.message || "Layma từ chối tạo link." });
+            return res.status(500).json({ success: false, message: "Layma trả về dữ liệu lỗi: " + shortLink.substring(0, 60) });
         }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
