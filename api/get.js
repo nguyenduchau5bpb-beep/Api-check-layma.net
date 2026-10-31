@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 
 global.tokenDatabase = global.tokenDatabase || {};
+global.statsData = global.statsData || { totalCreated: 0, totalSuccess: 0, history: [] };
 
 module.exports = async (req, res) => {
     const userId = req.query.user_id;
@@ -9,15 +10,14 @@ module.exports = async (req, res) => {
     }
 
     const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const expiresAt = Date.now() + 10 * 60 * 1000; // Hết hạn sau 10 phút
+    const expiresAt = Date.now() + 10 * 60 * 1000;
 
-    global.tokenDatabase[token] = {
-        userId: userId,
-        expiresAt: expiresAt,
-        used: false
-    };
+    global.tokenDatabase[token] = { userId, expiresAt, used: false };
+    
+    // Tăng biến đếm tổng số link đã tạo
+    global.statsData.totalCreated += 1;
 
-    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024"; // Token layma.net của bạn
+    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024";
     const domainVercel = `https://${req.headers.host}`;
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
     
@@ -26,7 +26,6 @@ module.exports = async (req, res) => {
     try {
         const response = await fetch(laymaUrl);
         const data = await response.json();
-
         if (data.success) {
             return res.json({ success: true, short_url: data.html });
         } else {
