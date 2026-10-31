@@ -20,14 +20,28 @@ module.exports = async (req, res) => {
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
     const linkDuPhong = "https://layma.net/backup";
 
-    const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${redirectUrl}&link_du_phong=${linkDuPhong}`;
+    const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
 
     try {
         const response = await fetch(laymaUrl);
-        const data = await response.json();
+        const textResponse = await response.text();
+        
+        let data;
+        try {
+            data = JSON.parse(textResponse);
+        } catch (e) {
+            return res.status(500).json({ success: false, message: "Layma trả về dữ liệu không phải JSON: " + textResponse.substring(0, 100) });
+        }
 
         if (data.success && data.html) {
-            return res.json({ success: true, short_url: data.html });
+            let shortLink = data.html;
+            
+            const hrefMatch = shortLink.match(/href="([^"]+)"/);
+            if (hrefMatch) {
+                shortLink = hrefMatch[1];
+            }
+
+            return res.json({ success: true, short_url: shortLink });
         } else {
             return res.json({ success: false, message: data.message || "Layma không trả về link rút gọn." });
         }
