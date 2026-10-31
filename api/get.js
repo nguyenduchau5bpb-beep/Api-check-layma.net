@@ -15,22 +15,35 @@ module.exports = async (req, res) => {
     global.tokenDatabase[token] = { userId, expiresAt, used: false };
     global.statsData.totalCreated += 1;
 
-    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024"; // Token của bạn từ ảnh
+    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024";
     const domainVercel = `https://${req.headers.host}`;
+    
+    // Tạo link check nhưng thay thế dấu : và / thành dạng mã hóa an toàn để layma không bị lỗi parse
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
     const linkDuPhong = "https://layma.net/backup";
 
-    // Chuẩn hóa URL theo đúng tài liệu API layma.net
+    // Gọi API layma với chuẩn encodeURIComponent hoàn toàn
     const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
 
     try {
         const response = await fetch(laymaUrl);
-        const data = await response.json();
+        const textResponse = await response.text(); // Đọc dạng text trước để phòng hờ layma trả về html lỗi
 
-        if (data.success) {
-            return res.json({ success: true, short_url: data.html });
-        } else {
-            return res.json({ success: false, message: "Layma từ chối tạo link, kiểm tra lại token hoặc URL." });
+        try {
+            const data = JSON.parse(textResponse);
+            if (data.success) {
+                return res.json({ success: true, short_url: data.html });
+            } else {
+                return res.json({ success: false, message: data.message || "Layma từ chối tạo link." });
+            }
+        } catch (jsonError) {
+            // Nếu layma trả về HTML lỗi, in ra để dễ debug
+            return.status(500).json({ 
+                success: false, 
+                message: "Layma trả về dữ liệu không phải JSON", 
+                raw: textResponse,
+                sent_url: laymaUrl 
+            });
         }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
