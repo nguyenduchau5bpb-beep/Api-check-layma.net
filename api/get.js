@@ -10,16 +10,17 @@ module.exports = async (req, res) => {
     }
 
     const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const expiresAt = Date.now() + 10 * 60 * 1000; // Hết hạn sau 10 phút
+    const expiresAt = Date.now() + 10 * 60 * 1000;
 
     global.tokenDatabase[token] = { userId, expiresAt, used: false };
     global.statsData.totalCreated += 1;
 
-    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024"; // Token layma.net của bạn
+    const apiTokenUser = "e2608871b447b4b99eb1c01cde278024";
     const domainVercel = `https://${req.headers.host}`;
     const redirectUrl = `${domainVercel}/api/check?token=${token}&user=${userId}`;
     const linkDuPhong = "https://layma.net/backup";
 
+    // Encode đúng chuẩn để Layma không bao giờ trả về lỗi HTML
     const laymaUrl = `https://api.layma.net/api/admin/shortlink/quicklink?tokenUser=${apiTokenUser}&format=json&url=${encodeURIComponent(redirectUrl)}&link_du_phong=${encodeURIComponent(linkDuPhong)}`;
 
     try {
@@ -30,20 +31,21 @@ module.exports = async (req, res) => {
         try {
             data = JSON.parse(textResponse);
         } catch (e) {
-            return res.status(500).json({ success: false, message: "Layma trả về dữ liệu không phải JSON: " + textResponse.substring(0, 100) });
+            return res.status(500).json({ 
+                success: false, 
+                message: "Layma đang bận hoặc quá tải, vui lòng thử lại sau ít giây." 
+            });
         }
 
         if (data.success && data.html) {
             let shortLink = data.html;
-            
             const hrefMatch = shortLink.match(/href="([^"]+)"/);
             if (hrefMatch) {
                 shortLink = hrefMatch[1];
             }
-
             return res.json({ success: true, short_url: shortLink });
         } else {
-            return res.json({ success: false, message: data.message || "Layma không trả về link rút gọn." });
+            return res.json({ success: false, message: data.message || "Không thể tạo link rút gọn." });
         }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
