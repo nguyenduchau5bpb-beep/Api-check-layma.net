@@ -1,5 +1,7 @@
 const fetch = require('node-fetch');
 
+global.statsData = global.statsData || { totalCreated: 0, totalSuccess: 0, history: [] };
+
 module.exports = async (req, res) => {
     const { token, user } = req.query;
     
@@ -8,22 +10,20 @@ module.exports = async (req, res) => {
     }
 
     const tokenData = global.tokenDatabase[token];
-
-    if (tokenData.userId !== user) {
-        return res.send("<h3>⛔ Mã xác nhận không thuộc về tài khoản của bạn!</h3>");
-    }
-
-    if (tokenData.used) {
-        return res.send("<h3>⚠️ Mã xác nhận này đã được sử dụng trước đó rồi!</h3>");
-    }
-
-    if (Date.now() > tokenData.expiresAt) {
-        return res.send("<h3>⏳ Mã xác nhận đã hết hạn (quá 10 phút)!</h3>");
+    if (tokenData.userId !== user || tokenData.used || Date.now() > tokenData.expiresAt) {
+        return res.send("<h3>⚠️ Mã xác nhận không hợp lệ hoặc đã hết hạn!</h3>");
     }
 
     tokenData.used = true;
-    const earnedCoins = Math.floor(Math.random() * 41) + 10;
 
+    // Tăng thống kê thành công và lưu lịch sử
+    global.statsData.totalSuccess += 1;
+    global.statsData.history.push({
+        user: user,
+        time: new Date().toLocaleString("vi-VN")
+    });
+
+    const earnedCoins = Math.floor(Math.random() * 41) + 10;
     const botToken = "YOUR_TELEGRAM_BOT_TOKEN";
     const telegramMessage = encodeURIComponent(`🎉 *XÁC NHẬN VƯỢT LINK THÀNH CÔNG!*\n\n🎁 Bạn nhận được: *+${earnedCoins} COINS*\n💰 Số dư đã được cập nhật tự động!`);
     
@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
             <div class="box">
                 <h1>🎉 Vượt link thành công!</h1>
                 <p>Bạn đã nhận được <b>+${earnedCoins} Coins</b>.</p>
-                <p>Hãy quay lại Telegram Bot để kiểm tra số dư và mua hàng nhé!</p>
+                <p>Hệ thống đã ghi nhận <b>+1,200 VNĐ</b> doanh thu cho chủ bot!</p>
             </div>
         </body>
         </html>
