@@ -3,29 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Nhận Vượt Link - Sói Store</title>
+    <title>Xác Thực Giao Dịch - Sói Store</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; text-align: center; padding-top: 50px; }
-        .box { background: #1e293b; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .code { font-size: 32px; font-weight: bold; color: #38bdf8; background: #334155; padding: 15px 25px; border-radius: 8px; margin: 20px 0; display: inline-block; letter-spacing: 2px; }
-        p { color: #94a3b8; }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; max-width: 400px; width: 100%; }
+        h2 { color: #38bdf8; margin-bottom: 10px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        .code-box { background: #0f172a; border: 2px dashed #38bdf8; padding: 15px; font-size: 20px; font-weight: bold; color: #facc15; border-radius: 8px; margin-bottom: 20px; word-break: break-all; letter-spacing: 1px; }
+        .btn { background: #0284c7; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn:hover { background: #0369a1; }
+        .btn-success { background: #16a34a; margin-top: 10px; }
+        .btn-success:hover { background: #15803d; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>🎉 VƯỢT LINK THÀNH CÔNG!</h2>
-        <p>Copy mã dưới đây và gửi vào Bot Telegram để nhận xu:</p>
-        <div class="code" id="codeDisplay">Đang tải...</div>
-        <p><small>Mã có hiệu lực trong 15 phút.</small></p>
+
+    <div class="card">
+        <h2>🐺 SÓI STORE VERIFICATION</h2>
+        <p>Bấm nút bên dưới để sao chép mã check xác thực của bạn:</p>
+        
+        <div class="code-box" id="codeText">Đang tải mã...</div>
+        
+        <button class="btn" onclick="copyCode()">📋 Sao chép mã check</button>
+        <button class="btn btn-success" onclick="returnToBot()">🔙 Quay lại Telegram Bot</button>
     </div>
 
     <script>
+        // Lấy mã code từ URL (Ví dụ: verify.html?code=SOI-123456)
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
+        
+        const codeBox = document.getElementById('codeText');
         if (code) {
-            document.getElementById('codeDisplay').innerText = code;
+            codeBox.innerText = code;
         } else {
-            document.getElementById('codeDisplay').innerText = "MÃ KHÔNG HỢP LỆ!";
+            codeBox.innerText = "MÃ KHÔNG HỢP LỆ";
+        }
+
+        function copyCode() {
+            if (!code) return;
+            navigator.clipboard.writeText(code).then(() => {
+                alert("✅ Đã sao chép mã check thành công: " + code);
+            }).err(err => {
+                alert("❌ Lỗi sao chép, vui lòng copy thủ công!");
+            });
+        }
+
+        function returnToBot() {
+            window.location.href = "https://t.me/Bot_ma_soi_bot"; // Thay username bot của vk vào đây
         }
     </script>
 </body>
